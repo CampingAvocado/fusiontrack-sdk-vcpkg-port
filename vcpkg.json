@@ -1,0 +1,7 @@
+{
+  "name": "fusiontrack-sdk",
+  "version": "4.8.1",
+  "port-version": 0,
+  "description": "atracsys driver for the fusionTrack.",
+  "homepage": "https://atracsys.com/_support/controlledAccess/fusionTrack/"
+}
