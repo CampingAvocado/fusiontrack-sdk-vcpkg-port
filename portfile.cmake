@@ -27,6 +27,10 @@ cmake_path(SET SOURCE_PATH ${CMAKE_CURRENT_LIST_DIR}) # TEMP
 # Copy headers
 file(GLOB headers "${SOURCE_PATH}/include/*" "${SOURCE_PATH}/samples/*.hpp") # todo; are samples even needed?
 file(COPY ${headers} DESTINATION "${CURRENT_PACKAGES_DIR}/include")
+
+file(GLOB advancedAPI_headers "${SOURCE_PATH}/advancedAPI/*.hpp")                           # copy advancedAPI headers into subdir to preserve
+file(COPY ${advancedAPI_headers} DESTINATION "${CURRENT_PACKAGES_DIR}/include/advancedAPI") # '#include' syntax from standalone library
+
 file(COPY "${SOURCE_PATH}/atnet" DESTINATION "${CURRENT_PACKAGES_DIR}/include/atnet") # copy atnet headers into subdir to preserve
                                                                                       # '#include' syntax from standalone library
 
@@ -38,7 +42,8 @@ elseif(VCPKG_TARGET_IS_LINUX) # TODO: rectify
 endif()
 
 # Copy sources - this is not normally done but the partially compiled mess that is the Atracsys SDK forces my hands here...
-file(COPY "${SOURCE_PATH}/advancedAPI/" DESTINATION "${CURRENT_PACKAGES_DIR}/src/advancedAPI")
+file(GLOB advancedAPI_sources "${SOURCE_PATH}/advancedAPI/*.cpp")
+file(COPY ${advancedAPI_sources} DESTINATION "${CURRENT_PACKAGES_DIR}/src/advancedAPI")
 
 # Copy CMake config files
 file(COPY "${SOURCE_PATH}/cmake/" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}/")
