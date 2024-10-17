@@ -25,7 +25,7 @@ set(VCPKG_BUILD_TYPE release)
 cmake_path(SET SOURCE_PATH ${CMAKE_CURRENT_LIST_DIR}) # TEMP
 
 # Copy headers
-file(GLOB headers "${SOURCE_PATH}/include/*" "${SOURCE_PATH}/atnet"
+file(GLOB headers "${SOURCE_PATH}/include/*" "${SOURCE_PATH}/atnet/*"
                   "${SOURCE_PATH}/samples/*.hpp" "${SOURCE_PATH}/advancedAPI/*.hpp")
 file(COPY ${headers} DESTINATION "${CURRENT_PACKAGES_DIR}/include")
 
@@ -37,7 +37,7 @@ elseif(VCPKG_TARGET_IS_LINUX) # TODO: rectify
 endif()
 
 # Copy sources - this is not normally done but the partially compiled mess that is the Atracsys SDK forces my hands here...
-file(GLOB advancedAPI_sources "${SOURCE_PATH}/advancedAPI/*.cpp")
+file(GLOB advancedAPI_sources "${SOURCE_PATH}/advancedAPI/*.cpp" "${SOURCE_PATH}/advancedAPI/CMakeLists.txt")
 file(COPY ${advancedAPI_sources} DESTINATION "${CURRENT_PACKAGES_DIR}/src/advancedAPI")
 
 # Copy CMake config files
