@@ -1,3 +1,27 @@
+diff --git a/advancedAPI/CMakeLists.txt b/advancedAPI/CMakeLists.txt
+index 92816bf..d2ef585 100644
+--- a/advancedAPI/CMakeLists.txt
++++ b/advancedAPI/CMakeLists.txt
+@@ -85,10 +85,15 @@ include(GNUInstallDirs)
+ # install(TARGETS advancedAPI${ARCH} ARCHIVE DESTINATION
+ # "${CMAKE_BINARY_DIR}/${BUILD_TYPE_FOLDER}/install" PUBLIC_HEADER DESTINATION
+ # "${CMAKE_BINARY_DIR}/include" )
+-
++if (NOT DEFINED vcpkg_share_folder) # vcpkg patch: add safety check for override variables
++  message(FATAL_ERROR "vcpkg patch: export target needs to be defined through 'vcpkg_share_folder'")
++elseif(NOT DEFINED vcpkg_lib_folder)
++  message(FATAL_ERROR "vcpkg patch: export target needs to be defined through 'vcpkg_lib_folder'")
++endif()
+ install(
+     TARGETS advancedAPI${ARCH}
+-    DESTINATION "${CMAKE_BINARY_DIR}/advancedAPI/lib"
+-    EXPORT advancedAPI-target)
++    DESTINATION "${vcpkg_lib_folder}"                   # vcpkg patch: allow destination to be overidden
++    EXPORT advancedAPI-target)                          # in AtracsysAdvancedAPIConfig.cmake
+ install(EXPORT advancedAPI-target
+-        DESTINATION "${CMAKE_BINARY_DIR}/advancedAPI")
++        DESTINATION "${vcpkg_share_folder}") # vcpkg patch: allow destination to be overidden
++                                             # in AtracsysAdvancedAPIConfig.cmake
 diff --git a/cmake/Atracsys/AtracsysConfig.cmake b/cmake/Atracsys/AtracsysConfig.cmake
 index 0da06a1..3d0cb5d 100644
 --- a/cmake/Atracsys/AtracsysConfig.cmake
