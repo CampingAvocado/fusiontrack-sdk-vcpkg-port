@@ -1,0 +1,234 @@
+diff --git a/cmake/Atracsys/AtracsysConfig.cmake b/cmake/Atracsys/AtracsysConfig.cmake
+index 0da06a1..3d0cb5d 100644
+--- a/cmake/Atracsys/AtracsysConfig.cmake
++++ b/cmake/Atracsys/AtracsysConfig.cmake
+@@ -17,7 +17,7 @@ if (Atracsys_FIND_QUIETLY)
+   set(_Atracsys_FIND_PARTS_QUIET QUIET)
+ endif ()
+ 
+-get_filename_component(_atracsys_install_prefix "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
++get_filename_component(_atracsys_install_prefix "${CMAKE_CURRENT_LIST_DIR}/../" ABSOLUTE)
+ 
+ set(_Atracsys_NOTFOUND_MESSAGE)
+ 
+diff --git a/cmake/AtracsysAdvancedAPI/AtracsysAdvancedAPIConfig.cmake b/cmake/AtracsysAdvancedAPI/AtracsysAdvancedAPIConfig.cmake
+index 160bc5b..cd76e39 100644
+--- a/cmake/AtracsysAdvancedAPI/AtracsysAdvancedAPIConfig.cmake
++++ b/cmake/AtracsysAdvancedAPI/AtracsysAdvancedAPIConfig.cmake
+@@ -1,8 +1,10 @@
++# VCPK GENERAL PATCH: changed CMAKE_CURRENT_BINARY_DIR to _atracsysAdvancedAPI_install_prefix so that the
++#                     build/<ARCH> folder of the project doesn't get contaminated with package files
+ if (CMAKE_VERSION VERSION_LESS 3.11)
+   message(FATAL_ERROR "Atracsys SDK requires at least CMake version 3.11")
+ endif ()
+ 
+-get_filename_component(_atracsysAdvancedAPI_install_prefix "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
++get_filename_component(_atracsysAdvancedAPI_install_prefix "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE) # vcpkg: patched relative path
+ 
+ include(GNUInstallDirs)
+ 
+@@ -16,7 +18,9 @@ if (NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE Release)
+ endif ()
+ 
+-set(Atracsys_DIR "${_atracsysAdvancedAPI_install_prefix}/cmake/Atracsys")
++# set(Atracsys_DIR "${_atracsysAdvancedAPI_install_prefix}/cmake/Atracsys") vcpkg: patched;
++#                                                                           this variable is correctly set in
++#                                                                           ../fusiontrack-sdk-config.cmake
+ message(STATUS "Atracsys_DIR is ${Atracsys_DIR}")
+ 
+ find_package(Atracsys REQUIRED COMPONENTS SDK)
+@@ -30,17 +34,21 @@ endif ()
+ 
+ set(AtracsysAdvancedAPI_LIBRARIES Atracsys::AdvancedAPI)
+ 
+-file(GLOB advanced_SRCS "${_atracsysAdvancedAPI_install_prefix}/advancedAPI/*")
+-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/AdvancedApi-src")
+-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}")
++file(GLOB advanced_SRCS "${_atracsysAdvancedAPI_install_prefix}/src/advancedAPI/*"
++                        "${_atracsysAdvancedAPI_install_prefix}/include/*") # vcpkg: patched; added 'src' and include path
++
++file(MAKE_DIRECTORY "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-src")
++file(MAKE_DIRECTORY "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-build/${CMAKE_BUILD_TYPE}")
+ foreach (FILE IN LISTS advanced_SRCS)
+-  configure_file(${FILE} "${CMAKE_BINARY_DIR}/AdvancedApi-src" COPYONLY)
++  configure_file(${FILE} "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-src" COPYONLY)
+ endforeach ()
+ message(STATUS "Creating C++ API makefiles")
+ execute_process(
+-  COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" "-DAtracsys_DIR:PATH=${Atracsys_DIR}"
+-          "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}" "${CMAKE_BINARY_DIR}/AdvancedApi-src"
+-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
++  COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" "-DAtracsys_DIR:PATH=${Atracsys_DIR}" "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
++          "-Dvcpkg_lib_folder:PATH=${_atracsysAdvancedAPI_install_prefix}/lib" # vcpkg patch: override install prefix so the lib gets placed in a sensible location
++          "-Dvcpkg_share_folder:PATH=${_atracsysAdvancedAPI_install_prefix}/share/fusiontrack-sdk/AtracsysAdvancedAPI/" # vcpkg patch: override install prefix so the lib gets placed in a sensible location
++          "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-src"
++  WORKING_DIRECTORY "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
+   RESULT_VARIABLE CPPWRAPPER_MAKEFILES)
+ if (NOT ${CPPWRAPPER_MAKEFILES} EQUAL 0)
+   message(FATAL_ERROR "Could not create C++ API makefiles (error is ${CPPWRAPPER_MAKEFILES})")
+@@ -55,7 +63,7 @@ if (NOT WIN32 OR (WIN32 AND CMAKE_GENERATOR MATCHES "Ninja.*"))
+       --
+       install
+       -j${N}
+-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
++    WORKING_DIRECTORY "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
+     RESULT_VARIABLE CPPWRAPPER_BUILD)
+     if (NOT ${CPPWRAPPER_BUILD} EQUAL 0)
+       message(FATAL_ERROR "Could not compile and/or install C++ API (error is ${CPPWRAPPER_BUILD})")
+@@ -68,7 +76,7 @@ else ()
+       --build
+       .
+       --config ${CMAKE_BUILD_TYPE}
+-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
++    WORKING_DIRECTORY "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
+     RESULT_VARIABLE CPPWRAPPER_BUILD)
+   if (NOT ${CPPWRAPPER_BUILD} EQUAL 0)
+     message(FATAL_ERROR "Could not compile C++ API (error is ${CPPWRAPPER_BUILD})")
+@@ -81,7 +89,7 @@ else ()
+       .
+       --config ${CMAKE_BUILD_TYPE}
+       --target install
+-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
++    WORKING_DIRECTORY "${_atracsysAdvancedAPI_install_prefix}/AdvancedApi-build/${CMAKE_BUILD_TYPE}"
+     RESULT_VARIABLE CPPWRAPPER_INSTALL)
+     if (NOT ${CPPWRAPPER_INSTALL} EQUAL 0)
+       message(FATAL_ERROR "Could not install C++ API (error is ${CPPWRAPPER_BUILD})")
+@@ -111,7 +119,7 @@ macro (_populate_AdvancedAPI_target_properties Configuration LIB_LOCATION IMPLIB
+     PROPERTY IMPORTED_CONFIGURATIONS ${Configuration})
+ 
+   set(imported_location
+-      "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}/advancedAPI/lib/${LIB_LOCATION}")
++      "${_atracsysAdvancedAPI_install_prefix}/lib/${LIB_LOCATION}") # vcpkg patch: changed to vcpkg lib folder
+   _atracsys_sdk_check_file_exists(${imported_location})
+   set_target_properties(
+     Atracsys::AdvancedAPI PROPERTIES "INTERFACE_LINK_LIBRARIES" "${_AtracsysAdvancedAPI_LIB_DEPENDENCIES}"
+@@ -121,7 +129,7 @@ endmacro ()
+ 
+ if (NOT TARGET Atracsys::AdvancedAPI)
+ 
+-  set(_AtracsysAdvancedAPI_OWN_INCLUDE_DIRS "${_atracsysAdvancedAPI_install_prefix}/advancedAPI/")
++  set(_AtracsysAdvancedAPI_OWN_INCLUDE_DIRS "${_atracsysAdvancedAPI_install_prefix}/include") # vcpkg: patch; '/advancedAPI -> '/include'
+ 
+   foreach (_dir ${_AtracsysAdvancedAPI_OWN_INCLUDE_DIRS})
+     _atracsys_sdk_check_file_exists(${_dir})
+@@ -183,15 +191,15 @@ if (NOT TARGET Atracsys::AdvancedAPI)
+     message(STATUS "Found (really?) AtracsysAdvancedAPI module")
+   endif ()
+   set(_AtracsysAdvancedAPI_LIB_DEPENDENCIES "Atracsys::SDK")
+-  message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
+-  include("${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}/advancedAPI/advancedAPI-target.cmake")
++  message(STATUS "_atracsysAdvancedAPI_install_prefix is ${_atracsysAdvancedAPI_install_prefix}")
++  include("${_atracsysAdvancedAPI_install_prefix}/share/fusiontrack-sdk/AtracsysAdvancedAPI/advancedAPI-target.cmake") # vcpkg patch: changed to vcpkg config file location
+   add_library(Atracsys::AdvancedAPI STATIC IMPORTED)
+ 
+   set_property(
+     TARGET Atracsys::AdvancedAPI
+     PROPERTY
+       INTERFACE_INCLUDE_DIRECTORIES
+-      "${CMAKE_BINARY_DIR}/AdvancedApi-build/${CMAKE_BUILD_TYPE}/advancedAPI/lib"
++      "${_atracsysAdvancedAPI_install_prefix}/lib" # vcpkg patch: changed to vcpkg lib folder
+       "${AtracsysAdvancedAPI_INCLUDE_DIRS}")
+   set_property(TARGET Atracsys::AdvancedAPI PROPERTY INTERFACE_COMPILE_DEFINITIONS
+                                                      ${AtracsysAdvancedAPI_COMPILE_DEFINITIONS})
+@@ -203,4 +211,4 @@ if (NOT TARGET Atracsys::AdvancedAPI)
+     DEBUG ${CMAKE_STATIC_LIBRARY_PREFIX}advancedAPI${ARCH}${CMAKE_STATIC_LIBRARY_SUFFIX} "")
+ 
+   _atracsys_advancedapi_check_file_exists("${CMAKE_CURRENT_LIST_DIR}/AtracsysAdvancedAPIConfigVersion.cmake")
+-endif ()
++endif ()
+\ No newline at end of file
+diff --git a/cmake/AtracsysAtnet/AtracsysAtnetConfig.cmake b/cmake/AtracsysAtnet/AtracsysAtnetConfig.cmake
+index db1c041..603a151 100644
+--- a/cmake/AtracsysAtnet/AtracsysAtnetConfig.cmake
++++ b/cmake/AtracsysAtnet/AtracsysAtnetConfig.cmake
+@@ -2,7 +2,7 @@ if (CMAKE_VERSION VERSION_LESS 3.11)
+   message(FATAL_ERROR "Atracsys Atnet requires at least CMake version 3.11")
+ endif ()
+ 
+-get_filename_component(_atracsysAtnet_install_prefix "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
++get_filename_component(_atracsysAtnet_install_prefix "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE) # vcpkg: patched relative path
+ 
+ if ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+   set(ARCH 64)
+@@ -34,11 +34,8 @@ macro (_populate_Atnet_target_properties Configuration LIB_LOCATION IMPLIB_LOCAT
+     APPEND
+     PROPERTY IMPORTED_CONFIGURATIONS ${Configuration})
+ 
+-  if (WIN32)
+-    set(imported_location "${_atracsysAtnet_install_prefix}/bin/${LIB_LOCATION}")
+-  else ()
+-    set(imported_location "${_atracsysAtnet_install_prefix}/lib/${LIB_LOCATION}")
+-  endif ()
++  set(imported_location "${_atracsysSDK_install_prefix}/lib/${LIB_LOCATION}") # vcpkg patch: imported_location is no longer /bin for windows
++
+   _atracsys_sdk_check_file_exists(${imported_location})
+   set_target_properties(
+     Atracsys::Atnet PROPERTIES "INTERFACE_LINK_LIBRARIES" "${_AtracsysAtnet_LIB_DEPENDENCIES}"
+@@ -53,7 +50,7 @@ macro (_populate_Atnet_target_properties Configuration LIB_LOCATION IMPLIB_LOCAT
+ endmacro ()
+ 
+ if (NOT TARGET Atracsys::Atnet)
+-  set(_AtracsysAtnet_OWN_INCLUDE_DIRS "${_atracsysAtnet_install_prefix}/atnet/")
++  set(_AtracsysAtnet_OWN_INCLUDE_DIRS "${_atracsysAtnet_install_prefix}/include") # vcpkg: patch; changed '/atnet' -> '/include'
+ 
+   foreach (_dir ${_AtracsysAtnet_OWN_INCLUDE_DIRS})
+     _atracsys_sdk_check_file_exists(${_dir})
+@@ -134,7 +131,7 @@ if (NOT TARGET Atracsys::Atnet)
+       PROPERTY INTERFACE_LINK_OPTIONS "/DELAYLOAD:atnetLib${ARCH}.dll")
+     set_property(
+       TARGET Atracsys::Atnet PROPERTY INTERFACE_COMPILE_DEFINITIONS ATR_FTK NOMINMAX
+-                                      FORCED_DEVICE_DLL_PATH="${_atracsysAtnet_install_prefix}/bin")
++                                      FORCED_DEVICE_DLL_PATH="${_atracsysAtnet_install_prefix}/lib") # vcpkg patch: /bin -> /lib
+   else ()
+     set_property(TARGET Atracsys::Atnet PROPERTY INTERFACE_COMPILE_DEFINITIONS ATR_FTK)
+   endif ()
+diff --git a/cmake/AtracsysSDK/AtracsysSDKConfig.cmake b/cmake/AtracsysSDK/AtracsysSDKConfig.cmake
+index 0befd62..63f9422 100644
+--- a/cmake/AtracsysSDK/AtracsysSDKConfig.cmake
++++ b/cmake/AtracsysSDK/AtracsysSDKConfig.cmake
+@@ -3,7 +3,7 @@ if (CMAKE_VERSION VERSION_LESS 3.11)
+ endif ()
+ 
+ get_filename_component(_atracsysSDK_install_prefix
+-                       "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
++                       "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE) # vcpkg: patched relative filepath
+ 
+ if ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+   set(ARCH 64)
+@@ -36,11 +36,8 @@ macro (_populate_SDK_target_properties
+                APPEND
+                PROPERTY IMPORTED_CONFIGURATIONS ${Configuration})
+ 
+-  if (WIN32)
+-    set(imported_location "${_atracsysSDK_install_prefix}/bin/${LIB_LOCATION}")
+-  else ()
+-    set(imported_location "${_atracsysSDK_install_prefix}/lib/${LIB_LOCATION}")
+-  endif ()
++  set(imported_location "${_atracsysSDK_install_prefix}/lib/${LIB_LOCATION}") # vcpkg patch: imported_location is no longer /bin for windows
++
+   _atracsys_sdk_check_file_exists(${imported_location})
+   set_target_properties(Atracsys::SDK
+                         PROPERTIES "INTERFACE_LINK_LIBRARIES"
+@@ -140,7 +137,7 @@ if (NOT TARGET Atracsys::SDK)
+     set_property(TARGET Atracsys::SDK
+ 	             APPEND PROPERTY INTERFACE_LINK_OPTIONS "/DELAYLOAD:fusionTrack${ARCH}.dll")
+     set_property(TARGET Atracsys::SDK
+-                 PROPERTY INTERFACE_COMPILE_DEFINITIONS ATR_FTK NOMINMAX FORCED_DEVICE_DLL_PATH="${_atracsysSDK_install_prefix}/bin")
++                 PROPERTY INTERFACE_COMPILE_DEFINITIONS ATR_FTK NOMINMAX FORCED_DEVICE_DLL_PATH="${_atracsysSDK_install_prefix}/lib") # vcpkg patch: /bin -> /lib
+   else ()
+     set_property(TARGET Atracsys::SDK
+                  PROPERTY INTERFACE_COMPILE_DEFINITIONS ATR_FTK)
+diff --git a/cmake/fusiontrack-sdk-config.cmake b/cmake/fusiontrack-sdk-config.cmake
+new file mode 100644
+index 0000000..c1c7a11
+--- /dev/null
++++ b/cmake/fusiontrack-sdk-config.cmake
+@@ -0,0 +1,6 @@
++# Simple wrapper around third-party CMake config so that CMake can automatically find
++# the library under the port name using its CMAKE_PREFIX_PATH and without
++# editing any of the Atracsys CMake configs.
++set(Atracsys_DIR "${CMAKE_CURRENT_LIST_DIR}/Atracsys") # override Atracsys_DIR here
++find_package(Atracsys COMPONENTS "${fusiontrack-sdk_FIND_COMPONENTS}"
++             REQUIRED PATHS "${CMAKE_CURRENT_LIST_DIR}" NO_DEFAULT_PATH)
+\ No newline at end of file
