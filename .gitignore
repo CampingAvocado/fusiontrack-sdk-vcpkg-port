@@ -1,0 +1,14 @@
+# ignore all proprietary fusiontrack-sdk files that need to (or may) be pasted in
+advancedAPI
+atnet
+bin
+cmake
+data
+doc
+include
+lib
+matlab
+python
+samples
+*.exe
+versions.txt
