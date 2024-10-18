@@ -29,10 +29,11 @@ file(GLOB headers "${SOURCE_PATH}/include/*" "${SOURCE_PATH}/atnet/*"
                   "${SOURCE_PATH}/samples/*.hpp" "${SOURCE_PATH}/advancedAPI/*.hpp")
 file(COPY ${headers} DESTINATION "${CURRENT_PACKAGES_DIR}/include")
 
-# Copy binaries
+# Copy libraries
 if(VCPKG_TARGET_IS_WINDOWS)
+    file(GLOB_RECURSE fusiontrack_dlls "${SOURCE_PATH}/bin/*.dll")
+    file(COPY ${fusiontrack_dlls} DESTINATION "${CURRENT_PACKAGES_DIR}/lib") # dlls are in bin folder for some reason
     file(COPY "${SOURCE_PATH}/lib/" DESTINATION "${CURRENT_PACKAGES_DIR}/lib")
-    file(COPY "${SOURCE_PATH}/bin/" DESTINATION "${CURRENT_PACKAGES_DIR}/bin")
 elseif(VCPKG_TARGET_IS_LINUX) # TODO: rectify
 endif()
 
